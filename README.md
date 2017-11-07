@@ -3,6 +3,8 @@
 [Passport](https://github.com/jaredhanson/passport) strategy for authenticating
 with [OpenID Connect](http://openid.net/connect/).
 
+Support of PKCE by using {pkce : true} as part of the options
+
 This module lets you authenticate using OpenID Connect in your Node.js
 applications.  By plugging into Passport, OpenID Connect authentication can be
 easily and unobtrusively integrated into any application or framework that
