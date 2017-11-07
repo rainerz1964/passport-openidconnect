@@ -327,6 +327,61 @@ describe('strategy', function() {
         });
       }); // that redirects to identity provider with relative redirect URI option
   
+      describe('that redirects to identity provider with relative redirect URI option and PKCE', function() {
+        var strategy = new Strategy({
+          issuer: 'https://www.example.com',
+          authorizationURL: 'https://www.example.com/oauth2/authorize',
+          tokenURL: 'https://www.example.com/oauth2/token',
+          clientID: 'ABC123',
+          clientSecret: 'secret',
+          callbackURL: 'https://www.example.net/login/return',
+          pkce : true
+        }, function() {});
+      
+      
+        var request, url, state;
+  
+        before(function(done) {
+          chai.passport.use(strategy)
+            .redirect(function(u) {
+              var pu = uri.parse(u, true);
+              
+              state = pu.query.state;
+              url = u;
+              done();
+            })
+            .req(function(req) {
+              request = req;
+              req.url = '/login/openid';
+              req.headers.host = 'www.example.net';
+              req.connection = { encrypted: true };
+              req.session = {};
+            })
+            .authenticate({ callbackURL: '/openid-connect/return' });
+        });
+  
+        it('should be redirected and contain PKCE', function() {
+          expect(url).to.include('https://www.example.com/oauth2/authorize');
+          expect(url).to.include('response_type=code');
+          expect(url).to.include('client_id=ABC123');
+          expect(url).to.include('redirect_uri=https%3A%2F%2Fwww.example.net%2Fopenid-connect%2Freturn');
+          expect(url).to.include('scope=openid');
+          expect(url).to.include('nonce=');
+          expect(url).to.include('code_challenge=');
+          expect(url).to.include('code_challenge_method=S256');
+        });
+        
+        it('should save state in session', function() {
+          expect(request.session['openidconnect:www.example.com'].state.handle).to.have.length(24);
+          expect(request.session['openidconnect:www.example.com'].state.handle).to.equal(state);
+
+          expect(request.session['openidconnect:www.example.com'].state.authorizationURL).to.equal('https://www.example.com/oauth2/authorize');
+          expect(request.session['openidconnect:www.example.com'].state.tokenURL).to.equal('https://www.example.com/oauth2/token');
+          expect(request.session['openidconnect:www.example.com'].state.clientID).to.equal('ABC123');
+          expect(request.session['openidconnect:www.example.com'].state.clientSecret).to.equal('secret');
+          expect(request.session['openidconnect:www.example.com'].state.params.response_type).to.equal('code');
+        });
+      }); // that redirects to identity provider with relative redirect URI option
     }); // issuing authorization request
     
   }); // configured to work with a known OpenID provider
